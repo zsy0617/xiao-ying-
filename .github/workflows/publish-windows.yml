@@ -1,0 +1,53 @@
+name: Build and publish Windows package
+
+on:
+  push:
+    paths:
+      - '.github/workflows/publish-windows.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: beret-girl-windows-release
+  cancel-in-progress: false
+
+jobs:
+  release:
+    runs-on: windows-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+      - name: Verify Windows launcher
+        shell: powershell
+        run: '& .\tests\Test-Installer.ps1'
+      - name: Download pinned original Windows runtime
+        shell: powershell
+        run: |
+          New-Item -ItemType Directory -Path downloads,build-inputs -Force | Out-Null
+          curl.exe --location --fail --retry 6 --retry-all-errors --connect-timeout 30 --output downloads/upstream.zip "https://github.com/MerZlin/dsh-pet-indesktop/releases/download/v4.4.0/dsh-pet-standalone-webm-chat-portable.zip"
+          if ($LASTEXITCODE -ne 0) { throw "Upstream download failed." }
+          $actual = (Get-FileHash downloads/upstream.zip -Algorithm SHA256).Hash.ToLowerInvariant()
+          if ($actual -ne "3f31b8c9454702d114e539324137347ad3a0c7c264d8071e29b250becdc59ea6") { throw "Upstream SHA256 mismatch." }
+          Expand-Archive -LiteralPath character-assets.zip -DestinationPath build-inputs/character
+          Expand-Archive -LiteralPath animation-preview.zip -DestinationPath build-inputs/preview
+      - name: Build complete and character-only packages
+        shell: powershell
+        run: |
+          python build_windows_bundle.py --upstream downloads/upstream.zip --character build-inputs/character/beret-girl --preview build-inputs/preview/beret-girl-preview --output dist
+          if ($LASTEXITCODE -ne 0) { throw "Package build failed." }
+      - name: Smoke-test the actual bundled Windows application
+        shell: powershell
+        run: '& .\tests\Test-Bundled-Runtime.ps1 -BundleRoot (Join-Path $pwd "dist\BeretGirl-Windows-v1.0.0")'
+      - name: Publish downloadable release
+        shell: powershell
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+        run: |
+          gh release create v1.0.0 "dist/BeretGirl-Windows-v1.0.0.zip" "dist/beret-girl-character.zip" "dist/SHA256SUMS.txt" --target "$env:GITHUB_SHA" --title "贝雷帽女孩 Windows 完整包 v1.0.0" --notes-file RELEASE_NOTES.md
+          if ($LASTEXITCODE -ne 0) { throw "Release publishing failed." }
+

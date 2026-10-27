@@ -4,6 +4,7 @@ on:
   push:
     paths:
       - '.github/workflows/publish-windows.yml'
+      - 'build_windows_bundle.py'
   workflow_dispatch:
 
 permissions:

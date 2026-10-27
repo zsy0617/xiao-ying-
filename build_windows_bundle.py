@@ -80,7 +80,7 @@ def main():
         dst = clean / video.relative_to(args.character)
         dst.parent.mkdir(parents=True, exist_ok=True)
         shutil.copy2(video, dst)
-    (clean / "安装说明.md").write_text((repo / "README.md").read_text(), encoding="utf-8")
+    (clean / "安装说明.md").write_text((repo / "README.md").read_text(encoding="utf-8"), encoding="utf-8")
     checks = [f"{sha256(p)}  {p.relative_to(clean).as_posix()}" for p in sorted(clean.rglob("*")) if p.is_file()]
     (clean / "SHA256SUMS.txt").write_text("\n".join(checks) + "\n", encoding="utf-8")
     (target / "scripts").mkdir()
@@ -88,9 +88,9 @@ def main():
     (target / "scripts" / "Install-And-Run.ps1").write_text(ps.replace("\r\n", "\n").replace("\n", "\r\n"), encoding="utf-8-sig")
     cmd = (repo / "启动贝雷帽女孩.cmd").read_text(encoding="utf-8")
     (target / "启动贝雷帽女孩.cmd").write_bytes(cmd.replace("\r\n", "\n").replace("\n", "\r\n").encode("utf-8"))
-    (target / "使用说明.md").write_text((repo / "README.md").read_text(), encoding="utf-8-sig")
+    (target / "使用说明.md").write_text((repo / "README.md").read_text(encoding="utf-8"), encoding="utf-8-sig")
     shutil.copytree(args.preview, target / "动作预览")
-    (target / "动作预览" / "安装说明.md").write_text((repo / "README.md").read_text(), encoding="utf-8")
+    (target / "动作预览" / "安装说明.md").write_text((repo / "README.md").read_text(encoding="utf-8"), encoding="utf-8")
     info = {
         "name": "贝雷帽女孩", "version": VERSION, "platform": "Windows x86-64",
         "upstream": {"repository": "https://github.com/MerZlin/dsh-pet-indesktop", "version": UPSTREAM_VERSION,

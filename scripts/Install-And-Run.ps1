@@ -102,7 +102,11 @@ if (-not $roleMatches -or $needsConfig) {
         $json = $config | ConvertTo-Json -Depth 100
         $tempConfig = Join-Path $DataRoot ('.config-slot-0-' + [guid]::NewGuid().ToString('N') + '.tmp')
         [IO.File]::WriteAllText($tempConfig, $json + [Environment]::NewLine, (New-Object Text.UTF8Encoding($false)))
-        if ($hasConfig) { [IO.File]::Replace($tempConfig, $configPath, $null) }
+        if ($hasConfig) {
+            # Windows PowerShell 5.1 can bind $null as an empty backup path.
+            # Supply a real backup filename for the atomic .NET replacement.
+            [IO.File]::Replace($tempConfig, $configPath, (Join-Path $backup 'config-slot-0-atomic.json'))
+        }
         else { Move-Item -LiteralPath $tempConfig -Destination $configPath }
     }
     Write-Host 'Beret Girl is ready. Existing model connections and chat settings were left in place.'
